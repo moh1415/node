@@ -137,6 +137,13 @@ bool CheckSubsumes(Node const* a, Node const* b) {
     } else if (a->opcode() == IrOpcode::kCheckedTaggedSignedToInt32 &&
                b->opcode() == IrOpcode::kCheckedTaggedToInt32) {
       // CheckedTaggedSignedToInt32(node) implies CheckedTaggedToInt32(node)
+    } else if (a->opcode() == IrOpcode::kCheckedTaggedSignedToInt32 &&
+               b->opcode() == IrOpcode::kCheckedTaggedToArrayIndex) {
+      // CheckedTaggedSignedToInt32(node) implies
+      // CheckedTaggedToArrayIndex(node)
+    } else if (a->opcode() == IrOpcode::kCheckedTaggedToInt32 &&
+               b->opcode() == IrOpcode::kCheckedTaggedToArrayIndex) {
+      // CheckedTaggedToInt32(node) implies CheckedTaggedToArrayIndex(node)
     } else if (a->opcode() == IrOpcode::kCheckReceiver &&
                b->opcode() == IrOpcode::kCheckReceiverOrNullOrUndefined) {
       // CheckReceiver(node) implies CheckReceiverOrNullOrUndefined(node)
@@ -150,17 +157,13 @@ bool CheckSubsumes(Node const* a, Node const* b) {
         case IrOpcode::kCheckNumber:
         case IrOpcode::kCheckBigInt:
           break;
-        case IrOpcode::kCheckedInt32ToCompressedSigned:
         case IrOpcode::kCheckedInt32ToTaggedSigned:
         case IrOpcode::kCheckedInt64ToInt32:
         case IrOpcode::kCheckedInt64ToTaggedSigned:
         case IrOpcode::kCheckedTaggedSignedToInt32:
         case IrOpcode::kCheckedTaggedToTaggedPointer:
         case IrOpcode::kCheckedTaggedToTaggedSigned:
-        case IrOpcode::kCheckedCompressedToTaggedPointer:
-        case IrOpcode::kCheckedCompressedToTaggedSigned:
-        case IrOpcode::kCheckedTaggedToCompressedPointer:
-        case IrOpcode::kCheckedTaggedToCompressedSigned:
+        case IrOpcode::kCheckedTaggedToArrayIndex:
         case IrOpcode::kCheckedUint32Bounds:
         case IrOpcode::kCheckedUint32ToInt32:
         case IrOpcode::kCheckedUint32ToTaggedSigned:
@@ -382,7 +385,9 @@ Reduction RedundancyElimination::ReduceSpeculativeNumberOperation(Node* node) {
     // than the type of the {first} node, otherwise we
     // would end up replacing NumberConstant inputs with
     // CheckBounds operations, which is kind of pointless.
-    if (!NodeProperties::GetType(first).Is(NodeProperties::GetType(check))) {
+    // In addition, as always, we need to make sure not to widen types.
+    if (!NodeProperties::GetType(first).Is(NodeProperties::GetType(check)) &&
+        NodeProperties::GetType(check).Is(NodeProperties::GetType(first))) {
       NodeProperties::ReplaceValueInput(node, check, 0);
     }
   }
