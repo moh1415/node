@@ -79,7 +79,7 @@ parser.add_option('--prefix',
     default='/usr/local',
     help='select the install prefix [default: %default]')
 
-parser.add_option('--coverage',
+
     action='store_true',
     dest='coverage',
     help='Build node with code coverage enabled')
